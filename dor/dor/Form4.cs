@@ -129,13 +129,13 @@ namespace dor
                             int labelyy = 50;
                             while (sqlDataReader.Read())
                             {
-                                // Retrieve seat information for each category
+                              
                                 string namaKategori = sqlDataReader["nama_kategori"].ToString();
                                 string harga = sqlDataReader["harga"].ToString();
                                 string maxCapacity = sqlDataReader["maxcapacity"].ToString();
                                 string status = sqlDataReader["status"].ToString();
                                 string remainingSeatsLabel = sqlDataReader["remaining_seats_label"].ToString();
-                                // Create labels dynamically
+                             
                                 Label labelNamaKategori = new Label();
                                 labelNamaKategori.Location = new Point(50, labelY);
                                 labelNamaKategori.Size = new Size(200, 20);
