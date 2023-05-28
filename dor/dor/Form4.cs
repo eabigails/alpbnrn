@@ -1,4 +1,4 @@
-using MySql.Data.MySqlClient;
+﻿using MySql.Data.MySqlClient;
 using System;
 using System.Data;
 using System.Drawing;
@@ -17,6 +17,7 @@ namespace dor
         MySqlDataReader sqlDataReader;
         string sqlquery;
         DataTable dtConcert = new DataTable();
+        private string formattedDate;
         string connection = "server=localhost;uid=root;pwd=ujinujin;database=db_concert";
 
         public Form4(string selectedValue)
@@ -107,7 +108,7 @@ WHERE c.nama_concert = @selectedValue
 GROUP BY c.nama_concert, k.nama_kategori, k.harga, k.maxcapacity;
 ";
 
-                
+
 
 
                 using (MySqlConnection sqlConnection = new MySqlConnection(connection))
@@ -180,14 +181,62 @@ GROUP BY c.nama_concert, k.nama_kategori, k.harga, k.maxcapacity;
             }
         }
 
+        private string selectedConcert;
+        private string selectedCategory;
+        private decimal selectedPrice;
+        private DateTime selectedDate;
 
         private void button1_click(object sender, EventArgs e)
         {
             Button button = (Button)sender;
             string categoryName = button.Name;
+
+            string concertName = "";
+            decimal price = 0;
+            DateTime selectedDate = DateTime.MinValue;
+
+            string query = @"
+        SELECT c.nama_concert AS concert_name,
+            k.nama_kategori AS category_name,
+            k.harga,
+            j.date_jadwal
+        FROM concert c
+        INNER JOIN jadwal j ON c.id_concert = j.id_concert
+        INNER JOIN kategori_kursi k ON c.id_concert = k.id_concert
+        WHERE c.nama_concert = @selectedValue
+            AND k.nama_kategori = @categoryName
+        GROUP BY c.nama_concert, k.nama_kategori, k.harga, j.date_jadwal;
+    ";
+
+            using (MySqlConnection sqlConnection = new MySqlConnection(connection))
+            {
+                using (MySqlCommand sqlCommand = new MySqlCommand(query, sqlConnection))
+                {
+                    sqlCommand.Parameters.AddWithValue("@selectedValue", selectedValue);
+                    sqlCommand.Parameters.AddWithValue("@categoryName", categoryName);
+                    sqlConnection.Open();
+                    using (MySqlDataReader sqlDataReader = sqlCommand.ExecuteReader())
+                    {
+                        if (sqlDataReader.Read())
+                        {
+                            concertName = sqlDataReader["concert_name"].ToString();
+                            price = Convert.ToDecimal(sqlDataReader["harga"]);
+                            selectedDate = Convert.ToDateTime(sqlDataReader["date_jadwal"]);
+                        }
+                    }
+                }
+            }
+
+            if (selectedDate == DateTime.MinValue)
+            {
+                MessageBox.Show("No data found for the selected category.");
+                return;
+            }
+
             this.Hide();
-            Form5 form5 = new Form5(categoryName);
-            form5.Show();
+            Form5 form5 = new Form5(concertName, categoryName, price, selectedDate);
+            form5.ShowDialog();
+            
         }
 
 
