@@ -1,8 +1,7 @@
-﻿using MySql.Data.MySqlClient;
+using MySql.Data.MySqlClient;
 using System;
 using System.Data;
 using System.Drawing;
-using System.Globalization;
 using System.Windows.Forms;
 
 namespace dor
@@ -88,33 +87,28 @@ namespace dor
             DateTime date;
             if (DateTime.TryParse(selectedDate, out date))
             {
-                string formattedDate = date.ToString("yyyy-MM-dd"); // Format the date as 'YYYY-MM-DD'
+                string formattedDate = date.ToString("yyyy-MM-dd");
                 labelSelectedDate.Text = "Selected Date: " + formattedDate;
 
-                // Clear existing seat information
+
                 panelSeats.Controls.Clear();
 
-                string query = @"
-            SELECT k.nama_kategori, k.harga, k.maxcapacity, k.status,
-                CASE
-                    WHEN r.remaining_capacity IS NULL THEN 'Full Capacity'
-                    WHEN r.remaining_capacity = 0 THEN 'Sold Out'
-                    ELSE CONCAT(r.remaining_capacity, ' seats remaining')
-                END AS remaining_seats_label
-            FROM kategori_kursi k
-            INNER JOIN jadwal j ON k.id_concert = j.id_concert
-            INNER JOIN concert c ON j.id_concert = c.id_concert
-            LEFT JOIN (
-                SELECT k.id_kategori, k.maxcapacity - COUNT(q.id_order) AS remaining_capacity
-                FROM kategori_kursi k
-                LEFT JOIN queue_number q ON k.id_kategori = q.id_kategori
-                LEFT JOIN jadwal j2 ON k.id_concert = j2.id_concert
-                WHERE DATE(j2.date_jadwal) = @selectedDate
-                GROUP BY k.id_kategori
-            ) AS r ON k.id_kategori = r.id_kategori
-            WHERE c.nama_concert = @selectedValue
-                AND DATE(j.date_jadwal) = @selectedDate
-            ORDER BY k.id_kategori;";
+                string query = @"SELECT c.nama_concert AS concert_name,
+    k.nama_kategori AS category_name,
+    k.harga,
+    k.maxcapacity,
+    k.maxcapacity - COALESCE(SUM(t.totalkursi), 0) AS remaining_seats
+FROM concert c
+INNER JOIN jadwal j ON c.id_concert = j.id_concert
+INNER JOIN kategori_kursi k ON c.id_concert = k.id_concert
+LEFT JOIN transaksi t ON k.id_kategori = t.id_kategori AND j.id_jadwal = t.id_jadwal
+WHERE c.nama_concert = @selectedValue
+    AND j.date_jadwal = @selectedDate
+GROUP BY c.nama_concert, k.nama_kategori, k.harga, k.maxcapacity;
+";
+
+                
+
 
                 using (MySqlConnection sqlConnection = new MySqlConnection(connection))
                 {
@@ -129,55 +123,52 @@ namespace dor
                             int labelyy = 50;
                             while (sqlDataReader.Read())
                             {
-                              
-                                string namaKategori = sqlDataReader["nama_kategori"].ToString();
-                                string harga = sqlDataReader["harga"].ToString();
+                                string categoryName = sqlDataReader["category_name"].ToString();
+                                string price = sqlDataReader["harga"].ToString();
                                 string maxCapacity = sqlDataReader["maxcapacity"].ToString();
-                                string status = sqlDataReader["status"].ToString();
-                                string remainingSeatsLabel = sqlDataReader["remaining_seats_label"].ToString();
-                             
-                                Label labelNamaKategori = new Label();
-                                labelNamaKategori.Location = new Point(50, labelY);
-                                labelNamaKategori.Size = new Size(200, 20);
-                                labelNamaKategori.Text = "Category: " + namaKategori;
-                                labelNamaKategori.ForeColor = Color.White;
-                                panelSeats.Controls.Add(labelNamaKategori);
-                                Label labelHarga = new Label();
-                                labelHarga.Location = new Point(50, labelY + 30);
-                                labelHarga.Size = new Size(200, 20);
-                                labelHarga.Text = "Price: " + harga;
-                                labelHarga.ForeColor = Color.White;
-                                panelSeats.Controls.Add(labelHarga);
+                                string remainingSeats = sqlDataReader["remaining_seats"].ToString();
+
+                                Label labelCategoryName = new Label();
+                                labelCategoryName.Location = new Point(50, labelY);
+                                labelCategoryName.Size = new Size(200, 20);
+                                labelCategoryName.Text = "Category: " + categoryName;
+                                labelCategoryName.ForeColor = Color.White;
+                                panelSeats.Controls.Add(labelCategoryName);
+
+                                Label labelPrice = new Label();
+                                labelPrice.Location = new Point(50, labelY + 30);
+                                labelPrice.Size = new Size(200, 20);
+                                labelPrice.Text = "Price: " + price;
+                                labelPrice.ForeColor = Color.White;
+                                panelSeats.Controls.Add(labelPrice);
+
                                 Label labelMaxCapacity = new Label();
                                 labelMaxCapacity.Location = new Point(50, labelY + 60);
                                 labelMaxCapacity.Size = new Size(200, 20);
                                 labelMaxCapacity.Text = "Max Capacity: " + maxCapacity;
                                 labelMaxCapacity.ForeColor = Color.White;
                                 panelSeats.Controls.Add(labelMaxCapacity);
-                                Label labelStatus = new Label();
-                                labelStatus.Location = new Point(50, labelY + 90);
-                                labelStatus.Size = new Size(200, 20);
-                                labelStatus.Text = "Status: " + status;
-                                labelStatus.ForeColor = Color.White;
-                                panelSeats.Controls.Add(labelStatus);
+
                                 Label labelRemainingSeats = new Label();
-                                labelRemainingSeats.Location = new Point(50, labelY + 120);
+                                labelRemainingSeats.Location = new Point(50, labelY + 90);
                                 labelRemainingSeats.Size = new Size(200, 20);
-                                labelRemainingSeats.Text = "Remaining Seats: " + remainingSeatsLabel;
+                                labelRemainingSeats.Text = "Remaining Seats: " + remainingSeats;
                                 labelRemainingSeats.ForeColor = Color.White;
                                 panelSeats.Controls.Add(labelRemainingSeats);
+
                                 labelY += 150;
 
                                 Button button1 = new Button();
                                 button1.Text = "Buy";
-                                button1.Name = namaKategori; 
+                                button1.Name = categoryName;
                                 button1.Location = new Point(260, labelyy);
                                 button1.Click += button1_click;
                                 button1.BackColor = Color.White;
                                 panelSeats.Controls.Add(button1);
+
                                 labelyy += 150;
                             }
-                         
+
                         }
                     }
                 }
