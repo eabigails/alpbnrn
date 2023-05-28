@@ -17,6 +17,9 @@ namespace dor
     {
 
         //TRANSAKSI
+
+        // jujur ak jg gatau ak ngapain - ujin T__T
+
         MySqlConnection sqlConnection;
         MySqlCommand sqlCommand;
         MySqlDataAdapter sqlDataAdapter;
@@ -89,11 +92,11 @@ namespace dor
 
         private void UpdateRemainingSeats()
         {
-            // Retrieve the schedule id and category id
+            //buat id jadwal
             int scheduleId = GetScheduleId();
             int categoryId = GetCategoryId();
 
-            // Update the remaining seats in the database
+            
             string updateQuery = "UPDATE jadwal SET sisa_kursi = sisa_kursi - @totalSeats WHERE id_jadwal = @scheduleId AND id_kategori = @categoryId";
 
             using (MySqlConnection sqlConnection = new MySqlConnection(connection))
@@ -142,7 +145,7 @@ namespace dor
 
             try
             {
-                // Construct the insert query
+            
                 string insertQuery = "INSERT INTO transaksi (id_order, totalkursi, jenis_pembayaran, id_cust, id_jadwal, id_kategori) " +
                     "VALUES (@idOrder, @totalSeats, @paymentMethod, @customerId, @scheduleId, @categoryId)";
 
@@ -150,23 +153,21 @@ namespace dor
                 {
                     using (MySqlCommand sqlCommand = new MySqlCommand(insertQuery, sqlConnection))
                     {
-                        // Set the parameter values
-                        sqlCommand.Parameters.AddWithValue("@idOrder", GenerateOrderId()); // Generate a unique order id
+                        sqlCommand.Parameters.AddWithValue("@idOrder", GenerateOrderId()); 
                         sqlCommand.Parameters.AddWithValue("@totalSeats", count);
                         sqlCommand.Parameters.AddWithValue("@paymentMethod", selectedPaymentMethod);
-                        sqlCommand.Parameters.AddWithValue("@customerId", GetCustomerId()); // Retrieve the customer id
-                        sqlCommand.Parameters.AddWithValue("@scheduleId", GetScheduleId()); // Retrieve the schedule id
-                        sqlCommand.Parameters.AddWithValue("@categoryId", GetCategoryId()); // Retrieve the category id
+                        sqlCommand.Parameters.AddWithValue("@customerId", GetCustomerId()); 
+                        sqlCommand.Parameters.AddWithValue("@scheduleId", GetScheduleId()); 
+                        sqlCommand.Parameters.AddWithValue("@categoryId", GetCategoryId()); 
 
                         sqlConnection.Open();
                         sqlCommand.ExecuteNonQuery();
                     }
                 }
 
-                // Update the remaining seats
                 UpdateRemainingSeats();
 
-                // Show success message
+               
                 MessageBox.Show("Data inserted into the database successfully and remaining seats updated.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
